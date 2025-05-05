@@ -1,4 +1,4 @@
-# Paper Finder
+# Sci Paper Finder
 
 A powerful Python tool for discovering and analyzing scientific papers from multiple academic sources. This tool helps researchers and academics find relevant papers and automatically generates summaries of their abstracts using advanced Natural Language Processing (NLP) techniques.
 
@@ -23,7 +23,7 @@ cd sci-paper-finder
 
 2. Create and activate a virtual environment:
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 # or
 .venv\Scripts\activate     # Windows
@@ -39,7 +39,7 @@ pip install -r requirements.txt
 Search for papers with a simple command:
 
 ```bash
-python main.py -s "machine learning" -m 10
+python3 main.py -s "machine learning" -m 10
 ```
 
 Options:
