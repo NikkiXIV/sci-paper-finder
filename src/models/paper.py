@@ -8,7 +8,7 @@ and serialization.
 
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 class Paper(BaseModel):
     """
@@ -18,7 +18,7 @@ class Paper(BaseModel):
         title (str): The title of the paper
         authors (List[str]): List of author names
         abstract (str): The paper's abstract
-        url (HttpUrl): URL to the paper's page
+        url (str): URL to the paper's page
         published (datetime): Publication date
         source (str): Source of the paper (e.g., 'arxiv', 'pubmed')
         doi (Optional[str]): Digital Object Identifier
@@ -29,7 +29,7 @@ class Paper(BaseModel):
     title: str
     authors: List[str]
     abstract: str
-    url: HttpUrl
+    url: str
     published: datetime
     source: str
     doi: Optional[str] = None
@@ -40,4 +40,23 @@ class Paper(BaseModel):
         """Pydantic model configuration."""
         json_encoders = {
             datetime: lambda v: v.isoformat()
+        }
+        
+    def model_dump_json(self) -> dict:
+        """
+        Convert the paper object to a JSON-serializable dictionary.
+        
+        Returns:
+            dict: JSON-serializable dictionary representation of the paper
+        """
+        return {
+            'title': self.title,
+            'authors': self.authors,
+            'abstract': self.abstract,
+            'url': self.url,
+            'published': self.published.isoformat(),
+            'source': self.source,
+            'doi': self.doi,
+            'keywords': self.keywords,
+            'summary': self.summary
         } 

@@ -22,8 +22,8 @@ def save_results(papers, query):
     filename = f"search_{query.replace(' ', '_')}_{timestamp}.json"
     output_file = output_dir / filename
     
-    # Converte os papers para dicionário
-    papers_data = [paper.model_dump() for paper in papers]
+    # Converte os papers para dicionário usando o método model_dump_json
+    papers_data = [paper.model_dump_json() for paper in papers]
     
     # Salva em JSON
     with open(output_file, 'w', encoding='utf-8') as f:
@@ -47,33 +47,39 @@ async def main():
     arxiv_scraper = ArxivScraper()
     pubmed_scraper = PubMedScraper()
     
-    # Search papers
-    print("Searching on arXiv...")
-    arxiv_papers = await arxiv_scraper.search(args.search, args.max)
-    
-    print("Searching on PubMed...")
-    pubmed_papers = await pubmed_scraper.search(args.search, args.max)
-    
-    # Combine results
-    all_papers = arxiv_papers + pubmed_papers
-    
-    print(f"\nFound {len(all_papers)} articles:")
-    print("-" * 50)
-    
-    # Display results
-    for i, paper in enumerate(all_papers, 1):
-        print(f"\nArticle {i}:")
-        print(f"Title: {paper.title}")
-        print(f"Authors: {', '.join(paper.authors)}")
-        print(f"Source: {paper.source}")
-        print(f"URL: {paper.url}")
-        if paper.summary:
-            print("\nSummary:")
-            print(paper.summary)
+    try:
+        # Search papers
+        print("Searching on arXiv...")
+        arxiv_papers = await arxiv_scraper.search(args.search, args.max)
+        
+        print("Searching on PubMed...")
+        pubmed_papers = await pubmed_scraper.search(args.search, args.max)
+        
+        # Combine results
+        all_papers = arxiv_papers + pubmed_papers
+        
+        print(f"\nFound {len(all_papers)} articles:")
         print("-" * 50)
+        
+        # Display results
+        for i, paper in enumerate(all_papers, 1):
+            print(f"\nArticle {i}:")
+            print(f"Title: {paper.title}")
+            print(f"Authors: {', '.join(paper.authors)}")
+            print(f"Source: {paper.source}")
+            print(f"URL: {paper.url}")
+            if paper.summary:
+                print("\nSummary:")
+                print(paper.summary)
+            print("-" * 50)
+        
+        # Save results
+        save_results(all_papers, args.search)
     
-    # Save results
-    save_results(all_papers, args.search)
+    finally:
+        # Ensure scrapers are properly closed
+        await arxiv_scraper.close()
+        await pubmed_scraper.close()
 
 if __name__ == "__main__":
     asyncio.run(main()) 

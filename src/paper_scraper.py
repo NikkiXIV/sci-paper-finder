@@ -270,9 +270,9 @@ class PaperScraper:
         try:
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump([paper.model_dump() for paper in papers], f, ensure_ascii=False, indent=2)
-            logger.info(f"Papers salvos em {filename}")
+            logger.info(f"Papers saved in {filename}")
         except Exception as e:
-            logger.error(f"Erro ao salvar papers: {str(e)}")
+            logger.error(f"Error saving papers: {str(e)}")
 
 async def main():
     # Configuração do scraper

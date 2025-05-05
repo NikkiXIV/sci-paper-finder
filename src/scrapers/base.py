@@ -41,19 +41,29 @@ class BaseScraper(ABC):
     
     async def __aenter__(self):
         """Create HTTP session when entering async context."""
-        self.session = aiohttp.ClientSession()
+        await self.ensure_session()
         return self
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Close HTTP session when exiting async context."""
-        if self.session:
+        await self.close()
+    
+    async def ensure_session(self):
+        """Ensure a valid session exists."""
+        if not self.session or self.session.closed:
+            self.session = aiohttp.ClientSession()
+    
+    async def close(self):
+        """Close the HTTP session if it exists."""
+        if self.session and not self.session.closed:
             await self.session.close()
+            self.session = None
     
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10)
     )
-    async def _make_request(self, url: str, params: dict) -> dict:
+    async def _make_request(self, url: str, params: dict) -> str:
         """
         Make HTTP request with retry logic.
         
@@ -62,17 +72,20 @@ class BaseScraper(ABC):
             params (dict): Query parameters
             
         Returns:
-            dict: Response data
+            str: Response text
             
         Raises:
             aiohttp.ClientError: If request fails after retries
         """
-        if not self.session:
-            self.session = aiohttp.ClientSession()
+        await self.ensure_session()
             
-        async with self.session.get(url, params=params) as response:
-            response.raise_for_status()
-            return await response.json()
+        try:
+            async with self.session.get(url, params=params) as response:
+                response.raise_for_status()
+                return await response.text()
+        except Exception as e:
+            await self.close()
+            raise e
     
     @abstractmethod
     async def search(self, query: str, max_results: int = 10) -> List[Paper]:

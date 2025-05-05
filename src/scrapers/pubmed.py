@@ -9,6 +9,7 @@ from typing import List
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import urllib.parse
+import json
 
 from .base import BaseScraper
 from src.models.paper import Paper
@@ -46,13 +47,19 @@ class PubMedScraper(BaseScraper):
             'sort': 'date'
         }
         
-        search_response = await self._make_request(
+        search_response_text = await self._make_request(
             f"{self.config['base_url']}/esearch.fcgi",
             search_params
         )
         
+        # Parse JSON response
+        search_response = json.loads(search_response_text)
+        
         # Extract paper IDs
         paper_ids = search_response['esearchresult']['idlist']
+        
+        if not paper_ids:
+            return []
         
         # Then, fetch details for each paper
         fetch_params = {
@@ -61,20 +68,24 @@ class PubMedScraper(BaseScraper):
             'retmode': 'xml'
         }
         
-        fetch_response = await self._make_request(
+        fetch_response_text = await self._make_request(
             f"{self.config['base_url']}/efetch.fcgi",
             fetch_params
         )
         
         # Parse XML response
-        root = ET.fromstring(fetch_response)
+        root = ET.fromstring(fetch_response_text)
         namespace = {'pubmed': 'http://www.ncbi.nlm.nih.gov/pubmed'}
         
         # Extract papers
         papers = []
         for article in root.findall('.//pubmed:PubmedArticle', namespace):
-            paper_data = self._extract_paper_data(article, namespace)
-            papers.append(self._parse_paper(paper_data))
+            try:
+                paper_data = self._extract_paper_data(article, namespace)
+                papers.append(self._parse_paper(paper_data))
+            except (AttributeError, ValueError) as e:
+                print(f"Error parsing paper: {e}")
+                continue
             
         return papers[:max_results]
     

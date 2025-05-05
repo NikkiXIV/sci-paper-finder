@@ -11,6 +11,7 @@ from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 from typing import List, Dict, Tuple
 import re
+import os
 
 def setup_nltk():
     """
@@ -21,9 +22,19 @@ def setup_nltk():
     - stopwords: For common word filtering
     - averaged_perceptron_tagger: For part-of-speech tagging
     """
-    nltk.download('punkt')
-    nltk.download('stopwords')
-    nltk.download('averaged_perceptron_tagger')
+    # Desabilita mensagens de download
+    nltk.downloader._show_info = lambda *args, **kwargs: None
+    
+    # Lista de recursos necessários
+    resources = ['punkt', 'stopwords', 'averaged_perceptron_tagger']
+    
+    # Baixa cada recurso silenciosamente
+    for resource in resources:
+        try:
+            nltk.download(resource, quiet=True)
+        except Exception as e:
+            print(f"Aviso: Erro ao baixar recurso {resource}: {e}")
+            continue
 
 def clean_text(text: str) -> str:
     """

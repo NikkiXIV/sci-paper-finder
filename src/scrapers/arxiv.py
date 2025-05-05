@@ -47,33 +47,37 @@ class ArxivScraper(BaseScraper):
         }
         
         # Make request to arXiv API
-        response = await self._make_request(
+        response_text = await self._make_request(
             self.config['base_url'],
             params
         )
         
         # Parse XML response
-        root = ET.fromstring(response)
+        root = ET.fromstring(response_text)
         namespace = {'atom': 'http://www.w3.org/2005/Atom'}
         
         # Extract papers
         papers = []
         for entry in root.findall('.//atom:entry', namespace):
-            paper_data = {
-                'title': entry.find('atom:title', namespace).text,
-                'authors': [
-                    author.find('atom:name', namespace).text
-                    for author in entry.findall('atom:author', namespace)
-                ],
-                'abstract': entry.find('atom:summary', namespace).text,
-                'url': entry.find('atom:id', namespace).text,
-                'published': datetime.strptime(
-                    entry.find('atom:published', namespace).text,
-                    '%Y-%m-%dT%H:%M:%SZ'
-                ),
-                'source': 'arxiv'
-            }
-            papers.append(self._parse_paper(paper_data))
+            try:
+                paper_data = {
+                    'title': entry.find('atom:title', namespace).text,
+                    'authors': [
+                        author.find('atom:name', namespace).text
+                        for author in entry.findall('atom:author', namespace)
+                    ],
+                    'abstract': entry.find('atom:summary', namespace).text,
+                    'url': entry.find('atom:id', namespace).text,
+                    'published': datetime.strptime(
+                        entry.find('atom:published', namespace).text,
+                        '%Y-%m-%dT%H:%M:%SZ'
+                    ),
+                    'source': 'arxiv'
+                }
+                papers.append(self._parse_paper(paper_data))
+            except (AttributeError, ValueError) as e:
+                print(f"Error parsing paper: {e}")
+                continue
             
         return papers[:max_results]
     
