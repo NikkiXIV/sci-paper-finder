@@ -13,6 +13,7 @@ import urllib.parse
 from .base import BaseScraper
 from src.models.paper import Paper
 from src.config import API_CONFIG
+from src.utils.text_processing import generate_summary, setup_nltk
 
 class ArxivScraper(BaseScraper):
     """
@@ -25,6 +26,8 @@ class ArxivScraper(BaseScraper):
     def __init__(self):
         """Initialize the arXiv scraper."""
         super().__init__('arxiv')
+        # Setup NLTK resources
+        setup_nltk()
     
     async def search(self, query: str, max_results: int = 10) -> List[Paper]:
         """
@@ -60,19 +63,21 @@ class ArxivScraper(BaseScraper):
         papers = []
         for entry in root.findall('.//atom:entry', namespace):
             try:
+                abstract = entry.find('atom:summary', namespace).text
                 paper_data = {
                     'title': entry.find('atom:title', namespace).text,
                     'authors': [
                         author.find('atom:name', namespace).text
                         for author in entry.findall('atom:author', namespace)
                     ],
-                    'abstract': entry.find('atom:summary', namespace).text,
+                    'abstract': abstract,
                     'url': entry.find('atom:id', namespace).text,
                     'published': datetime.strptime(
                         entry.find('atom:published', namespace).text,
                         '%Y-%m-%dT%H:%M:%SZ'
                     ),
-                    'source': 'arxiv'
+                    'source': 'arxiv',
+                    'summary': generate_summary(abstract) if abstract else None
                 }
                 papers.append(self._parse_paper(paper_data))
             except (AttributeError, ValueError) as e:
@@ -97,5 +102,6 @@ class ArxivScraper(BaseScraper):
             abstract=data['abstract'],
             url=data['url'],
             published=data['published'],
-            source=data['source']
+            source=data['source'],
+            summary=data.get('summary')
         ) 
