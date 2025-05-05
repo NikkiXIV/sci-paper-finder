@@ -1,4 +1,4 @@
-# Paper Finder
+# Sci Paper Finder
 
 A powerful Python tool for discovering and analyzing scientific papers from multiple academic sources. This tool helps researchers and academics find relevant papers and automatically generates summaries of their abstracts using advanced Natural Language Processing (NLP) techniques.
 
