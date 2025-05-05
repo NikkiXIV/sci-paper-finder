@@ -34,7 +34,7 @@ paper-scraper/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/paper-scraper.git
+git clone https://github.com/NikkiXIV/sci-paper-finder/
 cd paper-scraper
 ```
 
