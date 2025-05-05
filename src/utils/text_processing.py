@@ -9,6 +9,7 @@ import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
+from nltk.tag import pos_tag
 from typing import List, Dict, Tuple
 import re
 import os
@@ -31,7 +32,7 @@ def setup_nltk():
     # Baixa cada recurso silenciosamente
     for resource in resources:
         try:
-            nltk.download(resource, quiet=True)
+            nltk.download(resource, quiet=True, download_dir=os.path.expanduser('~/nltk_data'))
         except Exception as e:
             print(f"Aviso: Erro ao baixar recurso {resource}: {e}")
             continue
@@ -86,7 +87,7 @@ def extract_keywords(text: str, num_keywords: int = 10) -> List[str]:
 
 def calculate_sentence_scores(sentences: List[str], keywords: List[str]) -> Dict[str, float]:
     """
-    Calculate relevance scores for sentences based on keyword presence.
+    Calculate relevance scores for sentences based on keyword presence and position.
     
     Args:
         sentences (List[str]): List of sentences to score
@@ -97,7 +98,7 @@ def calculate_sentence_scores(sentences: List[str], keywords: List[str]) -> Dict
     """
     scores = {}
     
-    for sentence in sentences:
+    for i, sentence in enumerate(sentences):
         score = 0
         words = word_tokenize(clean_text(sentence))
         
@@ -105,9 +106,19 @@ def calculate_sentence_scores(sentences: List[str], keywords: List[str]) -> Dict
         for word in words:
             if word in keywords:
                 score += 1
-                
-        # Normalize by sentence length
-        scores[sentence] = score / len(words) if words else 0
+        
+        # Bônus para frases no início do texto
+        position_bonus = 1.0 - (i / len(sentences))
+        
+        # Bônus para frases com comprimento médio
+        length_penalty = 1.0
+        if len(words) < 5:  # Frases muito curtas
+            length_penalty = 0.5
+        elif len(words) > 30:  # Frases muito longas
+            length_penalty = 0.8
+            
+        # Normalize by sentence length and apply bonuses
+        scores[sentence] = (score / len(words) if words else 0) * position_bonus * length_penalty
         
     return scores
 

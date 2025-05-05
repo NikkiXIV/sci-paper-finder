@@ -40,12 +40,12 @@ class ArxivScraper(BaseScraper):
         Returns:
             List[Paper]: List of matching papers
         """
-        # Prepare search parameters
+        # Prepare search parameters with improved relevance
         params = {
-            'search_query': f'all:{query}',
+            'search_query': f'ti:{query} OR abs:{query}',  # Search in title and abstract
             'start': 0,
-            'max_results': min(max_results, self.config['max_results']),
-            'sortBy': 'submittedDate',
+            'max_results': min(max_results * 2, self.config['max_results']),  # Get more results for better filtering
+            'sortBy': 'relevance',  # Sort by relevance instead of date
             'sortOrder': 'descending'
         }
         
@@ -64,8 +64,14 @@ class ArxivScraper(BaseScraper):
         for entry in root.findall('.//atom:entry', namespace):
             try:
                 abstract = entry.find('atom:summary', namespace).text
+                title = entry.find('atom:title', namespace).text
+                
+                # Skip papers without abstract or with very short abstracts
+                if not abstract or len(abstract.split()) < 10:
+                    continue
+                
                 paper_data = {
-                    'title': entry.find('atom:title', namespace).text,
+                    'title': title,
                     'authors': [
                         author.find('atom:name', namespace).text
                         for author in entry.findall('atom:author', namespace)
@@ -84,6 +90,12 @@ class ArxivScraper(BaseScraper):
                 print(f"Error parsing paper: {e}")
                 continue
             
+        # Sort papers by relevance (title match first, then abstract match)
+        papers.sort(key=lambda p: (
+            query.lower() not in p.title.lower(),  # True comes after False
+            query.lower() not in p.abstract.lower()
+        ))
+        
         return papers[:max_results]
     
     def _parse_paper(self, data: dict) -> Paper:
